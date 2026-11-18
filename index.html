@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gaze Games</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#087f73" />
+    <link rel="stylesheet" href="styles.css?v=20261029-2" />
+    <link rel="stylesheet" href="viz.css?v=20261023-1" />
+    <script src="https://cdn.jsdelivr.net/npm/webgazer@2.1.0/dist/webgazer.js"></script>
+  </head>
+  <body>
+    <div id="sim-banner" class="sim-banner" hidden>SIMULATED GAZE · mouse position drives the gaze cursor (test mode, data flagged)</div>
+    <div id="cam-thumb" class="cam-thumb" hidden aria-hidden="true"><div class="cam-guide"></div></div>
+    <main id="app" class="app-shell">
+      <header class="topbar">
+        <div class="brand-mark" aria-hidden="true">◉</div>
+        <div>
+          <p class="eyebrow">WEBCAM EYE TRACKING · BCI SIMULATION</p>
+          <h1>Gaze Games &amp; Selection Experiment</h1>
+        </div>
+        <div id="status-chip" class="status-chip">Ready</div>
+      </header>
+
+      <section id="screen-start" class="screen screen-active" aria-labelledby="start-title">
+        <div class="welcome">
+          <div class="welcome-art" aria-hidden="true">
+            <svg viewBox="0 0 200 120"><ellipse cx="100" cy="60" rx="92" ry="48" fill="#eef6f4"/><path d="M20 60 Q100 -4 180 60 Q100 124 20 60Z" fill="#fff" stroke="#087f73" stroke-width="4"/><circle cx="100" cy="60" r="28" fill="#2a78d6"/><circle cx="100" cy="60" r="12" fill="#172027"/><circle cx="109" cy="51" r="5" fill="#fff"/></svg>
+          </div>
+          <p class="eyebrow">WEBCAM EYE TRACKING · BCI SIMULATION</p>
+          <h2 id="start-title">Play with your eyes</h2>
+          <p class="lede">Your webcam becomes an eye tracker, standing in for the decoder of a brain–computer interface. Calibrate once, then choose a game. Everything stays in this browser tab.</p>
+          <ol class="flow-steps" aria-label="How it works">
+            <li><strong>1</strong><span>Enter your name</span></li>
+            <li><strong>2</strong><span>Calibrate (≈1 min)</span></li>
+            <li><strong>3</strong><span>Pick a game</span></li>
+            <li><strong>4</strong><span>See your results</span></li>
+          </ol>
+          <form id="setup-form" class="welcome-form">
+            <label for="participant-id">Your name or participant ID</label>
+            <div class="welcome-row">
+              <input id="participant-id" name="participantId" required autocomplete="off" placeholder="e.g. Alex or P001" />
+              <button class="primary-button" type="submit">Start <span aria-hidden="true">→</span></button>
+            </div>
+            <p id="setup-error" class="form-error" role="alert"></p>
+            <details class="advanced">
+              <summary>Advanced settings</summary>
+              <div class="field-group">
+                <label for="tracker">Gaze tracker</label>
+                <select id="tracker" name="tracker">
+                  <option value="mediapipe">MediaPipe iris + head pose (new)</option>
+                  <option value="webgazer">WebGazer 2.1 (original)</option>
+                </select>
+                <small class="field-hint">MediaPipe uses iris position relative to the eye corners, eyelid opening and head pose. WebGazer is kept for comparison.</small>
+              </div>
+              <div class="field-group">
+                <label for="smoothing">Gaze smoothing</label>
+                <select id="smoothing" name="smoothing">
+                  <option value="strong">Strong — spike removal + fixation lock + One Euro</option>
+                  <option value="light">Light — One Euro only (original)</option>
+                  <option value="off">Off — raw tracker output</option>
+                </select>
+                <small class="field-hint">Strong holds the cursor still while you fixate (≈100 ms delay on eye jumps). It reduces jitter, not constant offset. Can be changed during games with keys 1/2/3.</small>
+              </div>
+            </details>
+          </form>
+          <p class="small-print"><a href="analysis.html">Multi-participant analysis page</a></p>
+        </div>
+      </section>
+
+      <section id="screen-camera" class="screen" aria-labelledby="camera-title">
+        <div class="narrow-content">
+          <p class="eyebrow">STEP 1 OF 3</p>
+          <h2 id="camera-title">Connect the camera</h2>
+          <p>Allow camera access and check that your face is clearly visible. The webcam sits above the screen, so: raise or tilt the screen until your eyes are level with its top edge, sit 50–70 cm away, light from the front. Calibration and validation run in fullscreen so the page geometry stays fixed.</p>
+          <div id="camera-preview" class="camera-preview"><span class="preview-placeholder">Waiting for camera permission</span></div>
+          <div class="action-row">
+            <button id="camera-retry" class="secondary-button" type="button">Reconnect</button>
+            <button id="camera-next" class="primary-button" type="button" disabled>Go fullscreen &amp; calibrate <span aria-hidden="true">→</span></button>
+          </div>
+          <p id="camera-message" class="muted-message" role="status"></p>
+        </div>
+      </section>
+
+      <section id="screen-calibration" class="screen experiment-screen" aria-labelledby="calibration-title">
+        <div class="experiment-header">
+          <div><p class="eyebrow">STEP 2 OF 3</p><h2 id="calibration-title">13-point calibration</h2></div>
+          <p id="calibration-progress" class="progress-label">0 / 45</p>
+        </div>
+        <p class="screen-hint">Keep your head still. Look at the centre of the yellow dot for a moment, then click it — 5 clicks per dot, eyes on the dot while clicking. Validation re-tests nine of these positions.</p>
+        <div id="calibration-board" class="calibration-board" aria-label="Calibration area"></div>
+      </section>
+
+      <section id="screen-validation" class="screen experiment-screen" aria-labelledby="validation-title">
+        <div class="experiment-header">
+          <div><p class="eyebrow">STEP 3 OF 3</p><h2 id="validation-title">Gaze validation</h2></div>
+          <div id="validation-score" class="score-badge">Measuring…</div>
+        </div>
+        <p class="screen-hint">Follow the nine dots with your eyes. Do not click.</p>
+        <div id="validation-board" class="validation-board" aria-label="Validation area"></div>
+        <div id="validation-result" class="result-panel" hidden></div>
+        <div class="action-row validation-actions">
+          <button id="validation-live-toggle" class="secondary-button" type="button" hidden>Show live gaze</button>
+          <button id="validation-retry-test" class="secondary-button" type="button" hidden>Re-run validation</button>
+          <button id="validation-retry" class="secondary-button" type="button" hidden>Recalibrate</button>
+          <button id="validation-continue-low" class="secondary-button" type="button" hidden>Continue anyway (low accuracy)</button>
+          <button id="validation-next" class="primary-button" type="button" hidden>Choose a game <span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+
+      <section id="screen-hub" class="screen hub-screen" aria-labelledby="hub-title">
+        <div class="hub-head">
+          <div>
+            <p class="eyebrow">CALIBRATED · <span id="hub-quality">–</span></p>
+            <h2 id="hub-title">Choose a game</h2>
+          </div>
+          <div class="hub-actions">
+            <button id="hub-fullscreen" class="secondary-button" type="button" hidden>Return to fullscreen</button>
+            <button id="hub-recalibrate" class="secondary-button" type="button">Recalibrate</button>
+            <button id="hub-exit" class="secondary-button" type="button">Exit</button>
+          </div>
+        </div>
+        <p id="hub-notice" class="hub-notice" hidden>You left fullscreen. Your calibration was made in fullscreen, so return to fullscreen for accurate eye control.</p>
+        <div class="game-cards">
+          <article class="game-card" data-game="bubbles">
+            <div class="card-art"><svg viewBox="0 0 240 150" aria-hidden="true"><rect width="240" height="150" rx="10" fill="#f6f9fb"/><path d="M40 118 C70 100 80 80 104 74" stroke="#2a78d6" stroke-opacity=".2" stroke-width="22" stroke-linecap="round" fill="none"/><circle cx="62" cy="40" r="15" fill="#eb6834" stroke="#fff" stroke-width="3"/><circle cx="186" cy="52" r="15" fill="#eb6834" stroke="#fff" stroke-width="3"/><circle cx="170" cy="116" r="15" fill="#eb6834" stroke="#fff" stroke-width="3"/><circle cx="126" cy="68" r="22" fill="none" stroke="#0ca30c" stroke-width="3" opacity=".6"/><circle cx="108" cy="73" r="12" fill="#2a78d6" stroke="#fff" stroke-width="3"/></svg></div>
+            <div class="card-body">
+              <h3>Bubble pop</h3>
+              <p>A blue ball follows your eyes. Touch the orange balls to pop them — as many as you can before time runs out.</p>
+              <div class="card-meta"><span class="chip">Free 2-D control</span><span class="chip">30–120 s</span><span class="best" data-best="bubbles"></span></div>
+            </div>
+            <button class="primary-button card-play" type="button">Play</button>
+          </article>
+          <article class="game-card" data-game="moles">
+            <div class="card-art"><svg viewBox="0 0 240 150" aria-hidden="true"><rect width="240" height="150" rx="10" fill="#eef6ea"/><g fill="#5e4733"><ellipse cx="50" cy="38" rx="24" ry="7"/><ellipse cx="120" cy="38" rx="24" ry="7"/><ellipse cx="190" cy="38" rx="24" ry="7"/><ellipse cx="50" cy="83" rx="24" ry="7"/><ellipse cx="190" cy="83" rx="24" ry="7"/><ellipse cx="50" cy="128" rx="24" ry="7"/><ellipse cx="120" cy="128" rx="24" ry="7"/><ellipse cx="190" cy="128" rx="24" ry="7"/></g><rect x="84" y="50" width="72" height="44" rx="6" fill="#2a78d6" fill-opacity=".1"/><path d="M104 83 V70 a16 16 0 0 1 32 0 V83Z" fill="#9b7653"/><circle cx="114" cy="69" r="3.5" fill="#172027"/><circle cx="126" cy="69" r="3.5" fill="#172027"/><ellipse cx="120" cy="76" rx="4" ry="3" fill="#e87ba4"/><ellipse cx="120" cy="83" rx="24" ry="7" fill="#5e4733"/><circle cx="140" cy="62" r="6" fill="#2a78d6" stroke="#fff" stroke-width="2"/></svg></div>
+            <div class="card-body">
+              <h3>Whack-a-mole</h3>
+              <p>Moles pop out of nine holes. Look at a mole’s square to whack it before it hides. The whole square counts, so small gaze errors don’t matter.</p>
+              <div class="card-meta"><span class="chip">Big targets</span><span class="chip">30–120 s</span><span class="best" data-best="moles"></span></div>
+            </div>
+            <button class="primary-button card-play" type="button">Play</button>
+          </article>
+          <article class="game-card" data-game="pong">
+            <div class="card-art"><svg viewBox="0 0 240 150" aria-hidden="true"><rect width="240" height="150" rx="10" fill="#f6f9fb"/><path d="M60 20 L150 82 L120 124" stroke="#c3c2b7" stroke-width="2" stroke-dasharray="5 6" fill="none"/><circle cx="150" cy="82" r="9" fill="#eb6834" stroke="#fff" stroke-width="3"/><line x1="150" y1="82" x2="150" y2="124" stroke="#2a78d6" stroke-opacity=".25" stroke-width="2"/><rect x="108" y="126" width="84" height="10" rx="5" fill="#2a78d6"/><path d="M40 138 H200" stroke="#e3e8e8" stroke-dasharray="6 6"/></svg></div>
+            <div class="card-body">
+              <h3>Gaze pong</h3>
+              <p>Just watch the ball — the paddle follows where you look, left and right only. You have three lives: how many returns can you make?</p>
+              <div class="card-meta"><span class="chip">Horizontal only</span><span class="chip">3 lives</span><span class="best" data-best="pong"></span></div>
+            </div>
+            <button class="primary-button card-play" type="button">Play</button>
+          </article>
+          <article class="game-card" data-game="selection">
+            <div class="card-art"><svg viewBox="0 0 240 150" aria-hidden="true"><rect width="240" height="150" rx="10" fill="#f6f9fb"/><g font-family="system-ui,sans-serif" font-weight="800" font-size="24" text-anchor="middle" fill="#075c55"><rect x="54" y="20" width="56" height="48" fill="#e7f4f1" stroke="#acd0cb"/><text x="82" y="52">A</text><rect x="130" y="20" width="56" height="48" fill="#e7f4f1" stroke="#acd0cb"/><text x="158" y="52">B</text><rect x="54" y="82" width="56" height="48" fill="#cdebe6" stroke="#acd0cb"/><text x="82" y="114">C</text><rect x="130" y="82" width="56" height="48" fill="#e7f4f1" stroke="#acd0cb"/><text x="158" y="114">D</text></g><circle cx="82" cy="106" r="20" fill="none" stroke="#087f73" stroke-opacity=".2" stroke-width="5"/><path d="M82 86 A20 20 0 1 1 64 115" fill="none" stroke="#087f73" stroke-width="5"/></svg></div>
+            <div class="card-body">
+              <h3>Target selection experiment</h3>
+              <p>The original study task: select letters by dwelling on them or by clicking, then fill in the NASA-TLX and SUS questionnaires. Produces the full results dashboard and data files.</p>
+              <div class="card-meta"><span class="chip">Records data</span><span class="chip">≈6 min</span></div>
+            </div>
+            <button class="primary-button card-play" type="button">Set up</button>
+          </article>
+        </div>
+        <p class="hub-tip">During games: <kbd>M</kbd> switches gaze / mouse control · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> set smoothing off / light / strong.</p>
+
+        <div id="experiment-sheet" class="sheet" hidden>
+          <form id="experiment-form" class="sheet-panel">
+            <h3>Target selection experiment — settings</h3>
+            <div class="field-grid">
+              <div class="field-group">
+                <label for="condition">Input condition</label>
+                <select id="condition" name="condition">
+                  <option value="both">Gaze vs mouse (balanced)</option>
+                  <option value="gaze">Gaze only</option>
+                  <option value="mouse">Mouse only</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="task-type">Task</label>
+                <select id="task-type" name="taskType">
+                  <option value="choice">Target selection (2×2)</option>
+                  <option value="search">Visual search</option>
+                  <option value="mixed">Both (interleaved)</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="search-type">Search difficulty</label>
+                <select id="search-type" name="searchType">
+                  <option value="mixed">Mixed (feature / conjunction)</option>
+                  <option value="feature">Feature search</option>
+                  <option value="conjunction">Conjunction search</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="set-size">Search set size</label>
+                <select id="set-size" name="setSize">
+                  <option value="mixed">Mixed (4 / 8)</option>
+                  <option value="4">4 items</option>
+                  <option value="8">8 items</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="dwell-ms">Dwell time</label>
+                <select id="dwell-ms" name="dwellMs">
+                  <option value="800">800 ms</option>
+                  <option value="1200">1200 ms</option>
+                  <option value="600">600 ms</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="trial-count">Main trials</label>
+                <input id="trial-count" name="trialCount" type="number" min="8" max="48" value="24" />
+              </div>
+              <div class="field-group">
+                <label for="practice-count">Practice trials</label>
+                <select id="practice-count" name="practiceCount">
+                  <option value="4">4</option>
+                  <option value="2">2</option>
+                  <option value="0">None</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="fixation-ms">Fixation cross</label>
+                <select id="fixation-ms" name="fixationMs">
+                  <option value="500">500 ms</option>
+                  <option value="300">300 ms</option>
+                  <option value="800">800 ms</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="timeout-ms">Response reminder</label>
+                <select id="timeout-ms" name="timeoutMs">
+                  <option value="5000">5000 ms</option>
+                  <option value="3000">3000 ms</option>
+                  <option value="8000">8000 ms</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="exp-questionnaire">Questionnaire after the experiment</label>
+              <select id="exp-questionnaire" name="expQuestionnaire">
+                <option value="none">None — only the short questionnaire at the end of the session</option>
+                <option value="full">Full NASA-TLX + SUS (for the formal study)</option>
+              </select>
+            </div>
+            <small class="field-hint">At least 24 main trials are recommended (6 per input × size cell). The reminder never auto-skips a trial; a Skip button appears instead.</small>
+            <div class="action-row"><button id="experiment-cancel" class="secondary-button" type="button">Cancel</button><button class="primary-button" type="submit">Start experiment <span aria-hidden="true">→</span></button></div>
+          </form>
+        </div>
+      </section>
+
+      <section id="screen-game" class="screen experiment-screen game-screen" aria-labelledby="game-title">
+        <div class="game-hud">
+          <h2 id="game-title">Game</h2>
+          <span class="game-stat"><small>Score</small><strong id="game-score">0</strong></span>
+          <span class="game-stat"><small id="game-time-label">Time</small><strong id="game-time">60 s</strong></span>
+          <span id="game-lives" class="game-stat game-lives" hidden><small>Lives</small><strong id="game-lives-val">♥♥♥</strong></span>
+          <span id="game-mode" class="game-tag" data-mode="gaze">Gaze control</span>
+          <span id="game-smooth" class="game-tag">Smoothing: strong</span>
+          <button id="game-quit" class="secondary-button" type="button">Back to games</button>
+        </div>
+        <canvas id="game-canvas" class="game-canvas" aria-label="Game area"></canvas>
+        <div id="game-intro" class="game-overlay" hidden>
+          <div class="overlay-card">
+            <div id="intro-art" class="overlay-art"></div>
+            <h3 id="intro-title">Game</h3>
+            <p id="intro-text"></p>
+            <div id="duration-switch" class="mode-switch duration-switch" role="radiogroup" aria-label="Round length">
+              <span class="switch-label">Time</span>
+              <label><input type="radio" name="game-duration" value="30" /> 30 s</label>
+              <label><input type="radio" name="game-duration" value="60" checked /> 60 s</label>
+              <label><input type="radio" name="game-duration" value="90" /> 90 s</label>
+              <label><input type="radio" name="game-duration" value="120" /> 120 s</label>
+            </div>
+            <p id="lives-note" class="lives-note" hidden>♥ ♥ ♥ You have 3 lives — the game ends after the third missed ball.</p>
+            <div class="mode-switch" role="radiogroup" aria-label="Control">
+              <label><input type="radio" name="game-mode" value="gaze" checked /> Eyes</label>
+              <label><input type="radio" name="game-mode" value="mouse" /> Mouse (for comparison)</label>
+            </div>
+            <div class="action-row"><button id="intro-back" class="secondary-button" type="button">Back</button><button id="intro-start" class="primary-button" type="button">Start <span aria-hidden="true">→</span></button></div>
+          </div>
+        </div>
+        <div id="game-result" class="game-overlay" hidden>
+          <div class="overlay-card result-card">
+            <p class="eyebrow" id="result-eyebrow">RESULT</p>
+            <h3 id="result-title">Game</h3>
+            <div class="result-score"><strong id="result-score">0</strong><span id="result-unit">points</span></div>
+            <p id="result-note" class="result-note"></p>
+            <div id="result-stats" class="result-stats"></div>
+            <figure class="result-figure"><img id="result-image" alt="Result figure" /><figcaption>Result figure — includes your score, a game-specific chart and a gaze heatmap.</figcaption></figure>
+            <div class="action-row result-actions">
+              <button id="result-download" class="secondary-button" type="button">↓ Download result image (PNG)</button>
+              <button id="result-exit" class="secondary-button" type="button">Exit</button>
+              <button id="result-hub" class="secondary-button" type="button">Choose another game</button>
+              <button id="result-again" class="primary-button" type="button">Play again</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-trial" class="screen trial-screen" aria-labelledby="trial-title">
+        <div class="trial-hud">
+          <div><p class="eyebrow"><span id="trial-index">Practice 1 / 4</span></p><h2 id="trial-title">Trial</h2></div>
+          <div class="hud-stats"><span id="trial-mode">Gaze</span><span id="trial-size">Large</span><span id="trial-timer">Ready</span></div>
+        </div>
+        <p id="trial-instruction" class="trial-instruction" aria-live="polite">Select the target.</p>
+        <div id="trial-board" class="trial-board" aria-label="Target area">
+          <button class="target target-a" data-target="A" type="button">A</button>
+          <button class="target target-b" data-target="B" type="button">B</button>
+          <button class="target target-c" data-target="C" type="button">C</button>
+          <button class="target target-d" data-target="D" type="button">D</button>
+          <button class="target target-e" data-target="E" type="button">E</button>
+          <button class="target target-f" data-target="F" type="button">F</button>
+          <button class="target target-g" data-target="G" type="button">G</button>
+          <button class="target target-h" data-target="H" type="button">H</button>
+          <div id="trial-fixation" class="trial-fixation" aria-hidden="true">+</div>
+          <div id="gaze-dot" class="gaze-dot" aria-hidden="true"></div>
+          <div id="dwell-ring" class="dwell-ring" aria-hidden="true"></div>
+        </div>
+        <p id="trial-message" class="trial-message" role="status" aria-live="assertive"><span id="trial-message-text">Instructions and feedback appear here.</span><button id="trial-skip" class="secondary-button trial-skip" type="button" hidden>Skip this trial</button></p>
+      </section>
+
+      <section id="screen-questionnaire" class="screen" aria-labelledby="questionnaire-title">
+        <div class="narrow-content wide">
+          <p class="eyebrow">STEP 04</p>
+          <h2 id="questionnaire-title">Questionnaire</h2>
+          <p>Workload is measured with the NASA Task Load Index (raw TLX) for each input method you used, and satisfaction/ease of use with the System Usability Scale (SUS).</p>
+          <form id="questionnaire-form" class="questionnaire-form">
+            <div id="tlx-container"></div>
+            <div id="sus-container"></div>
+            <fieldset id="preference-fieldset" hidden>
+              <legend>Which input method would you prefer for this task?</legend>
+              <div class="scale-row"><label><input type="radio" name="preference" value="gaze" />Gaze</label><label><input type="radio" name="preference" value="mouse" />Mouse</label><label><input type="radio" name="preference" value="none" />No preference</label></div>
+            </fieldset>
+            <div class="field-group"><label for="comment">Comments (optional)</label><textarea id="comment" name="comment" rows="3" placeholder="e.g. the bottom-left target was hard to trigger"></textarea></div>
+            <p id="questionnaire-error" class="form-error" role="alert"></p>
+            <button class="primary-button" type="submit">Finish &amp; view results <span aria-hidden="true">→</span></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="screen-complete" class="screen screen-results" aria-labelledby="complete-title">
+        <div class="results-head">
+          <div>
+            <p class="eyebrow">SESSION COMPLETE</p>
+            <h2 id="complete-title">Results</h2>
+            <p id="complete-summary" class="lede"></p>
+          </div>
+          <div class="download-grid">
+            <button id="download-json" class="download-button" type="button"><span class="download-icon">↓</span><span><strong>Full data (JSON)</strong><small>Needed for analysis.html &amp; Python</small></span></button>
+            <button id="download-trials" class="download-button" type="button"><span class="download-icon">↓</span><span><strong>Trials (CSV)</strong><small>Condition, RT, correctness</small></span></button>
+            <button id="download-gaze" class="download-button" type="button"><span class="download-icon">↓</span><span><strong>Gaze samples (CSV)</strong><small>Per-frame coordinates</small></span></button>
+          </div>
+        </div>
+        <div id="results-dashboard" class="viz-root"></div>
+        <div class="results-foot"><a class="text-button" href="analysis.html" target="_blank" rel="noopener">Open multi-participant analysis ↗</a><button id="complete-hub" class="primary-button" type="button">Back to games</button><button id="complete-exit" class="secondary-button" type="button">Exit</button></div>
+      </section>
+
+      <section id="screen-final" class="screen" aria-labelledby="final-title">
+        <div class="narrow-content wide">
+          <p class="eyebrow">LAST STEP · 1 MINUTE</p>
+          <h2 id="final-title">How was it?</h2>
+          <p>Six quick questions about controlling things with your eyes. 1 = strongly disagree, 5 = strongly agree.</p>
+          <form id="final-form" class="questionnaire-form final-form">
+            <div id="final-items"></div>
+            <fieldset id="final-pref-fieldset">
+              <legend>Which control did you prefer?</legend>
+              <div class="scale-row"><label><input type="radio" name="preference" value="eyes" />Eyes</label><label><input type="radio" name="preference" value="mouse" />Mouse</label><label><input type="radio" name="preference" value="none" />No preference / only used one</label></div>
+            </fieldset>
+            <div class="field-group"><label for="final-comment">Anything else? (optional)</label><textarea id="final-comment" name="comment" rows="3" placeholder="e.g. the bottom row of moles was hard to hit"></textarea></div>
+            <p id="final-error" class="form-error" role="alert"></p>
+            <div class="action-row"><button id="final-skip" class="secondary-button" type="button">Skip</button><button class="primary-button" type="submit">Finish <span aria-hidden="true">→</span></button></div>
+          </form>
+        </div>
+      </section>
+
+      <section id="screen-bye" class="screen" aria-labelledby="bye-title">
+        <div class="narrow-content bye">
+          <div class="complete-icon" aria-hidden="true">✓</div>
+          <p class="eyebrow">SESSION FINISHED</p>
+          <h2 id="bye-title">Thanks for playing</h2>
+          <p id="bye-summary" class="lede"></p>
+          <div id="bye-table"></div>
+          <div id="bye-feedback"></div>
+          <div class="action-row bye-actions">
+            <button id="bye-download" class="secondary-button" type="button">Download session (JSON)</button>
+            <button id="restart" class="primary-button" type="button">New player</button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="viz.js?v=20261023-1"></script>
+    <script src="tracker-mediapipe.js?v=20261023-1"></script>
+    <script src="gaze-filter.js?v=20261028-1"></script>
+    <script src="game.js?v=20261029-3"></script>
+    <script src="result-image.js?v=20261029-3"></script>
+    <script src="app.js?v=20261029-3"></script>
+    <script>
+      if ('serviceWorker' in navigator && location.protocol === 'http:') {
+        navigator.serviceWorker.register('service-worker.js?v=20261023-1').catch(() => {});
+      }
+    </script>
+  </body>
+</html>

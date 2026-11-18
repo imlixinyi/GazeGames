@@ -1,0 +1,11 @@
+{
+  "name": "Gaze Selection Experiment",
+  "short_name": "Gaze BCI",
+  "description": "Local webcam gaze calibration, validation and selection experiment",
+  "start_url": "./?v=20261022-1",
+  "display": "standalone",
+  "background_color": "#f7f8f5",
+  "theme_color": "#087f73",
+  "lang": "en",
+  "icons": []
+}

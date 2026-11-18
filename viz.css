@@ -1,0 +1,59 @@
+/* Styles for GazeViz dashboards (results screen + analysis.html). */
+.viz-root {
+  --gv-surface: #fcfcfb; --gv-plane: #f9f9f7; --gv-ink: #0b0b0b; --gv-ink2: #52514e; --gv-muted: #898781;
+  --gv-grid: #e1e0d9; --gv-border: rgba(11, 11, 11, .10);
+  max-width: 1280px; margin: 0 auto; color: var(--gv-ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.gv-flag { margin: 0 0 14px; padding: 10px 14px; border-left: 4px solid #d03b3b; background: #fff0ed; color: #8b3024; font-size: 13px; font-weight: 600; }
+.gv-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.gv-tile { padding: 14px 16px; border: 1px solid var(--gv-border); border-radius: 8px; background: var(--gv-surface); }
+.gv-tile-label { color: var(--gv-ink2); font-size: 12px; }
+.gv-tile-values { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 6px 0 4px; }
+.gv-tile-value { display: flex; align-items: baseline; gap: 6px; }
+.gv-tile-value strong { font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
+.gv-tile-value small { color: var(--gv-muted); font-size: 11px; }
+.gv-tile-note { color: var(--gv-muted); font-size: 11px; line-height: 1.4; }
+.gv-key { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.gv-tile-value .gv-key { align-self: center; }
+.gv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 12px; }
+.gv-card { min-width: 0; padding: 16px 16px 12px; border: 1px solid var(--gv-border); border-radius: 8px; background: var(--gv-surface); }
+.gv-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.gv-card h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.gv-sub { margin: 4px 0 0; color: var(--gv-ink2); font-size: 12px; line-height: 1.45; }
+.gv-export { flex: none; padding: 4px 9px; border: 1px solid var(--gv-border); border-radius: 4px; color: var(--gv-ink2); background: transparent; font-size: 11px; font-weight: 600; cursor: pointer; }
+.gv-export:hover { color: var(--gv-ink); border-color: var(--gv-muted); }
+.gv-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 2px 0 8px; color: var(--gv-ink2); font-size: 12px; }
+.gv-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.gv-swatch { display: inline-block; flex: none; }
+.gv-swatch-rect { width: 12px; height: 12px; border-radius: 3px; background: var(--c); }
+.gv-swatch-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.gv-swatch-ring { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--c); }
+.gv-swatch-line { width: 14px; height: 2px; border-radius: 1px; background: var(--c); }
+.gv-svg, .gv-canvas { display: block; width: 100%; height: auto; }
+.gv-hit { outline: none; cursor: default; }
+.gv-hit:hover .gv-mark, .gv-hit:focus .gv-mark { filter: brightness(1.12); }
+.gv-hit:focus-visible { outline: 2px solid #2a78d6; }
+.gv-tooltip { position: fixed; z-index: 2000; min-width: 120px; padding: 8px 10px; border: 1px solid var(--gv-border, rgba(11,11,11,.1)); border-radius: 6px; background: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.12); color: #0b0b0b; font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; pointer-events: none; }
+.gv-tip-title { margin-bottom: 4px; color: #52514e; font-size: 11px; }
+.gv-tip-row { display: flex; align-items: center; gap: 6px; line-height: 1.6; }
+.gv-tip-row .gv-key { width: 12px; height: 2px; border-radius: 1px; }
+.gv-tip-row span:last-child { color: #52514e; }
+.gv-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+.gv-select { width: auto; padding: 5px 8px; border: 1px solid var(--gv-border); border-radius: 4px; background: #fff; font-size: 12px; }
+.gv-btn { padding: 5px 12px; border: 1px solid #2a78d6; border-radius: 4px; color: #fff; background: #2a78d6; font-size: 12px; font-weight: 700; cursor: pointer; }
+.gv-clock { margin-left: auto; color: var(--gv-ink2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.gv-scrub { width: 100%; margin: 8px 0 0; padding: 0; accent-color: #2a78d6; }
+.gv-hero { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 4px; }
+.gv-hero strong { font-size: 52px; font-weight: 600; line-height: 1; letter-spacing: -.02em; }
+.gv-hero span { color: var(--gv-ink2); font-size: 13px; }
+.gv-quote { margin: 8px 0 0; color: var(--gv-ink2); font-size: 13px; font-style: italic; }
+.gv-empty { color: var(--gv-muted); font-size: 13px; }
+.gv-details { margin-top: 12px; padding: 12px 16px; border: 1px solid var(--gv-border); border-radius: 8px; background: var(--gv-surface); }
+.gv-details summary { font-size: 14px; font-weight: 600; cursor: pointer; }
+.gv-table-wrap { margin-top: 10px; overflow-x: auto; }
+.gv-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.gv-table th, .gv-table td { padding: 6px 8px; border-bottom: 1px solid var(--gv-grid); text-align: left; white-space: nowrap; }
+.gv-table th { color: var(--gv-ink2); font-weight: 600; }
+.gv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.gv-chip { padding: 4px 10px; border: 1px solid var(--gv-border); border-radius: 999px; background: #fff; font-size: 12px; cursor: pointer; }
+.gv-chip span { color: var(--gv-muted); }
