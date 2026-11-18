@@ -1,4 +1,4 @@
-# Gaze Games & Selection Experiment (BN5213 final project)
+# Gaze Games & Selection Experiment
 
 A browser-based webcam eye-tracking system that stands in for a **selection BCI**: the gaze tracker plays the role of
 the neural decoder, and looking at a target plays the role of the BCI's selection command. After entering a name and
@@ -6,7 +6,7 @@ calibrating once, the player chooses from three eye-controlled games (bubble pop
 original **target selection experiment**. The experiment compares gaze dwell with mouse clicks and measures workload
 (NASA-TLX) and usability (SUS). Everything runs locally in the browser. Nothing is uploaded.
 
-A Chinese walkthrough (中文对照说明) is in `说明_中文对照.md`.
+A Chinese walkthrough (中文对照说明) is in [README_CN.md](README_CN.md).
 
 ---
 
